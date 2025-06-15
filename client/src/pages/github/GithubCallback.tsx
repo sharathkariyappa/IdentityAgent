@@ -8,6 +8,10 @@ const GithubCallback = () => {
     const query = new URLSearchParams(window.location.search);
     const data = query.get('data');
     const code = query.get('code');
+    const token = query.get('token');
+    if (token) {
+        localStorage.setItem('access_token', token);
+      }
   
     if (data) {
       try {

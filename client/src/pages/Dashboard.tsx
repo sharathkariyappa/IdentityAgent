@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useAccount} from 'wagmi';
 import { useNavigate } from 'react-router-dom';
+import { fetchGitHubContributorData } from '../utils/fetchGitHubMetrics';
+import { fetchOnchainStats } from '../utils/fetchOnchainStats';
+import { ZKScoreCalculator } from '../utils/calculateZkScore';
 
 export default function Dashboard() {
-  const { data: walletClient } = useWalletClient();
   const { address, isConnected } = useAccount();
-  const [did, setDid] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string>('');
-  const [githubLink, setGithubLink] = useState<string>('');
   const [githubLinked, setGithubLinked] = useState(false);
   const [githubUser, setGithubUser] = useState<string | null>(null);
 
@@ -19,7 +17,7 @@ export default function Dashboard() {
     const storedUser = localStorage.getItem('githubUser');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      setGithubUser(parsedUser.login || parsedUser.username); // adjust depending on your backend
+      setGithubUser(parsedUser.login || parsedUser.username);
       setGithubLinked(true);
     }
   }, []);
@@ -27,19 +25,47 @@ export default function Dashboard() {
     const client_id = import.meta.env.VITE_GITHUB_CLIENT_ID;
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=http://localhost:4000/api/github/callback`;
   };
-  const saveProfile = () => {
-    if (!role || !githubUser) {
-      console.warn("Role or GitHub user is missing");
+
+  const saveProfile = async () => {
+    const token = localStorage.getItem("access_token");
+  
+    if (!role || !githubUser || !token || !address) {
+      console.warn("Missing info: role, GitHub user, token, or wallet");
       return;
     }
   
     const profileData = {
       role,
       githubUser,
+      wallet: address,
     };
-  
+
     localStorage.setItem('userProfile', JSON.stringify(profileData));
-    console.log("Saved Profile:", profileData);
+    // console.log("✅ Saved Profile:", profileData);
+  
+    try {
+      const [githubStats, onchainStats] = await Promise.all([
+        fetchGitHubContributorData(token, githubUser),
+        fetchOnchainStats(address),
+      ]);
+  
+      // console.log("📊 GitHub Stats:", githubStats);
+      // console.log("⛓️ Onchain Stats:", onchainStats);
+  
+      if (githubStats) {
+        const result = ZKScoreCalculator.calculateZkScore(githubStats, onchainStats);
+        console.log(result.totalScore);      // 445
+        console.log(result.role);            // "Contributor"
+        // console.log(result.roleConfidence);  // 87
+        // console.log(result.breakdown);       // Detailed score breakdown
+      } else {
+        console.warn("GitHub stats are null, unable to calculate ZK Score.");
+      }
+  
+      // Optional: Save zkScore in state or backend if needed
+    } catch (error) {
+      console.error("❌ Failed to fetch data or compute score:", error);
+    }
   };
   
 
