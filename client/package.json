@@ -12,15 +12,20 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.7",
     "@tailwindcss/vite": "^4.1.10",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "lucide-react": "^0.516.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
+    "snarkjs": "^0.7.5",
     "tailwindcss": "^4.1.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@types/snarkjs": "^0.7.9",
     "@vitejs/plugin-react": "^4.4.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",

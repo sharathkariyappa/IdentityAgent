@@ -1,21 +1,62 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// src/App.tsx
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
+import SideBar from './components/SideBar';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
-import './App.css';
 import GithubCallback from './pages/github/GithubCallback';
+import Profile from './pages/Profile';
+import Home from './pages/Home';
+import './App.css';
 
-function App() {
+const AppWrapper: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const showNavbar = location.pathname !== '/';
+  const showSidebar = ['/dashboard', '/profile'].includes(location.pathname);
+
+  const handleSidebarNavigation = (path: string) => {
+    navigate(path);
+  };
+
+  return (
+    <div className="flex flex-col w-full h-screen">
+    {showNavbar && <Navbar sidebarCollapsed={sidebarCollapsed} />}
+  
+    <div className="flex flex-1">
+      {showSidebar && (
+        <SideBar
+          collapsed={sidebarCollapsed}
+          setCollapsed={setSidebarCollapsed}
+          onNavigate={handleSidebarNavigation}
+          currentPath={location.pathname}
+        />
+      )}
+  
+      <div className="pt-8 w-full flex-1 overflow-y-auto">
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/github/callback" element={<GithubCallback />} />
+        </Routes>
+      </div>
+    </div>
+  </div>
+  
+  );
+};
+
+const App: React.FC = () => {
   return (
     <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/github/callback" element={<GithubCallback />} />
-      </Routes>
+      <AppWrapper />
     </Router>
   );
-}
+};
 
 export default App;

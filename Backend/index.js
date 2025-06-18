@@ -51,24 +51,22 @@ app.get('/api/onchain-stats', async (req, res) => {
   }
 
   try {
-    // Normalize address casing to avoid checksum issues
-    address = ethers.getAddress(address);
-
+    address = ethers.getAddress(address); // Normalize checksum
     const balance = await provider.getBalance(address);
     const txCount = await provider.getTransactionCount(address);
     const code = await provider.getCode(address);
+    const name = await provider.lookupAddress(address);
     const isContractDeployer = code !== '0x';
 
-    // Fixed token addresses with proper checksums
+    // === ERC20 Token Balances ===
     const tokens = [
       { symbol: 'DAI', address: '0x6B175474E89094C44Da98b954EedeAC495271d0F' },
-      { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' }, // Fixed checksum
+      { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
     ];
 
     const tokenBalances = await Promise.all(
       tokens.map(async (token) => {
         try {
-          // Also normalize token contract addresses
           const tokenAddress = ethers.getAddress(token.address);
           const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const rawBalance = await contract.balanceOf(address);
@@ -78,7 +76,6 @@ app.get('/api/onchain-stats', async (req, res) => {
             balance: parseFloat(ethers.formatUnits(rawBalance, decimals)),
           };
         } catch (tokenError) {
-          console.error(`Error fetching ${token.symbol} balance:`, tokenError.message);
           return {
             symbol: token.symbol,
             balance: 0,
@@ -88,18 +85,53 @@ app.get('/api/onchain-stats', async (req, res) => {
       })
     );
 
-    const hasNFTs = code !== '0x'; // Heuristic for now
+    // === NFTs === (Alchemy)
+    const alchemyUrl = `https://eth-mainnet.g.alchemy.com/nft/v3/${process.env.ALCHEMY_API_KEY}/getNFTsForOwner?owner=${address}`;
+    const nftRes = await axios.get(alchemyUrl);
+    const nftCount = nftRes.data?.ownedNfts?.length || 0;
+    const hasNFTs = nftCount > 0;
+
+    // === DAO Voting (Snapshot) ===
+    const snapshotUrl = `https://hub.snapshot.org/graphql`;
+    const daoQuery = {
+      query: `
+        query {
+          votes(where: { voter: "${address.toLowerCase()}" }) {
+            id
+          }
+        }
+      `,
+    };
+
+    let daoVotes = 0;
+    try {
+      const snapshotRes = await axios.post(snapshotUrl, daoQuery, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      daoVotes = snapshotRes.data.data.votes.length;
+    } catch (e) {
+      console.error('Snapshot fetch error:', e.message);
+    }
+
+    // === Contract Deployments (count how many times tx.to is null) ===
+    // NOTE: Infura doesn't give historical txs directly, needs indexing service.
+    // We'll just check if `txCount > 0 && isContractDeployer` for heuristic.
 
     res.json({
       address,
-      balance: ethers.formatEther(balance),
+      name,
+      ethBalance: parseFloat(ethers.formatEther(balance)),
       txCount,
       isContractDeployer,
+      contractDeployments: isContractDeployer ? 1 : 0, // rough heuristic
       tokenBalances,
+      nftCount,
       hasNFTs,
+      daoVotes,
     });
+
   } catch (error) {
-    console.error('Error fetching onchain stats:', error.message);
+    console.error('Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch onchain data' });
   }
 });

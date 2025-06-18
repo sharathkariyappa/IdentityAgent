@@ -1,5 +1,3 @@
-// calculateZkscore.ts - Fixed ZK Score Calculator with Corrected Role Detection
-
 interface GitHubStats {
     totalContributions?: number;
     topRepos?: { stargazerCount?: number }[];
@@ -10,10 +8,12 @@ interface GitHubStats {
 }
 
 interface OnchainStats {
-    balance?: string;
+    ethBalance?: string;
     txCount?: number;
     isContractDeployer?: boolean;
     hasNFTs?: boolean;
+    contractDeployments?: number;
+    daoVotes?: number;
     tokenBalances?: { symbol: string; balance: number }[];
 }
 
@@ -21,77 +21,60 @@ interface ZKScoreResult {
     totalScore: number;
     githubScore: number;
     onchainScore: number;
-    role: 'Contributor' | 'Investor' | 'Founder' | 'Newcomer';
+    role: 'Contributor' | 'Investor' | 'Founder';
     roleConfidence: number;
     breakdown: {
         github: {
-            contributions: number;
-            repositories: number;
-            community: number;
+            activity: number;
             impact: number;
+            community: number;
+            collaboration: number;
         };
         onchain: {
-            activity: number;
             wealth: number;
-            defi: number;
+            activity: number;
             technical: number;
+            governance: number;
         };
     };
 }
 
-export class ZKScoreCalculator {
-    // Scoring weights for different categories
-    private static readonly WEIGHTS = {
-        github: {
-            contributions: 0.3,
-            repos: 3,
-            stars: 2,
-            prs: 8,
-            issues: 4,
-            followers: 1.5,
-            contributedRepos: 6
-        },
-        onchain: {
-            txCount: 0.05,
-            ethBalance: 50,
-            tokenValue: 0.005,
-            contractDeployer: 40,
-            nfts: 20
-        }
+export class RealisticZKScoreCalculator {
+    // Realistic thresholds based on actual developer profiles
+    private static readonly GITHUB_THRESHOLDS = {
+        // Average contributor: 1000+ contributions, some PRs/issues, decent stars
+        CONTRIBUTOR_MIN_CONTRIBUTIONS: 1000,
+        CONTRIBUTOR_MIN_PRS: 20,
+        CONTRIBUTOR_MIN_ISSUES: 10,
+        CONTRIBUTOR_MIN_STARS: 50,
+        
+        // Founder: Strong GitHub + onchain presence
+        FOUNDER_MIN_CONTRIBUTIONS: 800,
+        FOUNDER_MIN_REPOS: 5,
+        FOUNDER_MIN_STARS: 100,
     };
 
-    // Fixed role thresholds - more realistic for actual classification
-    private static readonly ROLE_THRESHOLDS = {
-        github: {
-            minimal: 10,    // Very basic activity
-            low: 50,        // Some meaningful activity  
-            medium: 150,    // Solid contributor
-            high: 400       // Very active contributor
-        },
-        onchain: {
-            minimal: 5,     // Very basic activity
-            low: 25,        // Some meaningful activity
-            medium: 75,     // Active user
-            high: 200       // Power user
-        }
+    private static readonly ONCHAIN_THRESHOLDS = {
+        // Investor: Significant wealth, active trading
+        INVESTOR_MIN_ETH: 10, // 10+ ETH
+        INVESTOR_MIN_STABLECOINS: 25000, // $25k+ in stablecoins
+        INVESTOR_MIN_TXS: 500,
+        
+        // Founder: Technical activity + some wealth
+        FOUNDER_MIN_ETH: 1, // 1+ ETH
+        FOUNDER_MIN_TXS: 200,
+        FOUNDER_NEEDS_CONTRACTS: true,
     };
 
-    /**
-     * Calculate ZK Score and determine role
-     */
     public static calculateZkScore(github: GitHubStats, onchain: OnchainStats): ZKScoreResult {
-        // Calculate GitHub score components
         const githubBreakdown = this.calculateGitHubScore(github);
-        const githubScore = Object.values(githubBreakdown).reduce((sum, val) => sum + val, 0);
-
-        // Calculate Onchain score components
         const onchainBreakdown = this.calculateOnchainScore(onchain);
+
+        const githubScore = Object.values(githubBreakdown).reduce((sum, val) => sum + val, 0);
         const onchainScore = Object.values(onchainBreakdown).reduce((sum, val) => sum + val, 0);
 
         const totalScore = Math.round(githubScore + onchainScore);
-
-        // Determine role based on score distribution
-        const { role, confidence } = this.determineRole(githubScore, onchainScore);
+        const { role, confidence } = this.determineRole(github, onchain, githubScore, onchainScore);
 
         return {
             totalScore,
@@ -106,209 +89,244 @@ export class ZKScoreCalculator {
         };
     }
 
-    /**
-     * Calculate GitHub-specific scores
-     */
     private static calculateGitHubScore(github: GitHubStats) {
-        const contributions = github?.totalContributions || 0;
-        const repos = github?.topRepos?.length || 0;
-        const stars = github?.topRepos?.reduce((sum, repo) => sum + (repo.stargazerCount || 0), 0) || 0;
-        const prs = github?.mergedPRs || 0;
-        const issues = github?.issuesCreated || 0;
-        const followers = github?.followers || 0;
-        const contributedRepos = github?.contributedRepos || 0;
+        const {
+            totalContributions = 0,
+            topRepos = [],
+            mergedPRs = 0,
+            issuesCreated = 0,
+            followers = 0,
+            contributedRepos = 0
+        } = github;
+
+        const totalStars = topRepos.reduce((sum, repo) => sum + (repo.stargazerCount || 0), 0);
+        const repoCount = topRepos.length;
+
+        // Activity Score (0-40 points)
+        // Based on contributions with progressive scaling
+        let activityScore = 0;
+        if (totalContributions > 0) {
+            if (totalContributions < 100) {
+                activityScore = totalContributions * 0.1; // 0-10 points
+            } else if (totalContributions < 500) {
+                activityScore = 10 + (totalContributions - 100) * 0.05; // 10-30 points
+            } else if (totalContributions < 2000) {
+                activityScore = 30 + (totalContributions - 500) * 0.02; // 30-60 points
+            } else {
+                activityScore = 60 + Math.log10(totalContributions / 2000) * 15; // 60+ points
+            }
+        }
+        activityScore = Math.min(activityScore, 80);
+
+        // Impact Score (0-60 points)
+        // PRs and Issues show real contribution impact
+        const prScore = Math.min(mergedPRs * 1.5, 40); // Up to 40 points for PRs
+        const issueScore = Math.min(issuesCreated * 1, 20); // Up to 20 points for issues
+        const impactScore = prScore + issueScore;
+
+        // Community Score (0-40 points)
+        // Stars and followers show community recognition
+        const starScore = Math.min(totalStars * 0.3, 25); // Up to 25 points for stars
+        const followerScore = Math.min(followers * 0.05, 15); // Up to 15 points for followers
+        const communityScore = starScore + followerScore;
+
+        // Collaboration Score (0-30 points)
+        // Repository ownership and contributions to other repos
+        const repoScore = Math.min(repoCount * 2, 15); // Up to 15 points for own repos
+        const contribScore = Math.min(contributedRepos * 0.5, 15); // Up to 15 points for contributions
+        const collaborationScore = repoScore + contribScore;
 
         return {
-            contributions: contributions * this.WEIGHTS.github.contributions,
-            repositories: repos * this.WEIGHTS.github.repos,
-            community: (stars * this.WEIGHTS.github.stars) + (followers * this.WEIGHTS.github.followers),
-            impact: (prs * this.WEIGHTS.github.prs) + (issues * this.WEIGHTS.github.issues) + 
-                   (contributedRepos * this.WEIGHTS.github.contributedRepos)
+            activity: Math.round(activityScore),
+            impact: Math.round(impactScore),
+            community: Math.round(communityScore),
+            collaboration: Math.round(collaborationScore)
         };
     }
 
-    /**
-     * Calculate Onchain-specific scores
-     */
     private static calculateOnchainScore(onchain: OnchainStats) {
-        const ethBalance = parseFloat(onchain?.balance?.toString() || '0');
-        const txCount = onchain?.txCount || 0;
-        const isContractDeployer = onchain?.isContractDeployer || false;
-        const hasNFTs = onchain?.hasNFTs || false;
+        const {
+            ethBalance = "0",
+            txCount = 0,
+            isContractDeployer = false,
+            contractDeployments = 0,
+            daoVotes = 0,
+            tokenBalances = []
+        } = onchain;
 
-        // Calculate total stablecoin value
-        const stablecoinValue = onchain?.tokenBalances?.reduce((sum, token) => {
-            if (['USDC', 'DAI', 'USDT'].includes(token.symbol)) {
+        // Convert ETH balance (handle wei conversion)
+        const rawEthBalance = parseFloat(ethBalance);
+        const actualEthBalance = rawEthBalance > 1000000 ? rawEthBalance / 1e18 : rawEthBalance;
+
+        // Calculate stablecoin holdings
+        const stablecoinValue = tokenBalances.reduce((sum, token) => {
+            if (['USDC', 'DAI', 'USDT', 'USDP', 'FRAX'].includes(token.symbol.toUpperCase())) {
+                return sum + (token.balance || 0);
+            }
+            return sum;
+        }, 0);
+
+        // Calculate other token values (simplified - treating as $1 each for scoring)
+        const otherTokenValue = tokenBalances.reduce((sum, token) => {
+            if (!['USDC', 'DAI', 'USDT', 'USDP', 'FRAX'].includes(token.symbol.toUpperCase())) {
+                return sum + (token.balance || 0);
+            }
+            return sum;
+        }, 0);
+
+        // Wealth Score (0-100 points)
+        let wealthScore = 0;
+        
+        // ETH scoring with progressive tiers
+        if (actualEthBalance > 0) {
+            if (actualEthBalance < 1) {
+                wealthScore += actualEthBalance * 10; // 0-10 points
+            } else if (actualEthBalance < 10) {
+                wealthScore += 10 + (actualEthBalance - 1) * 5; // 10-55 points
+            } else if (actualEthBalance < 100) {
+                wealthScore += 55 + (actualEthBalance - 10) * 2; // 55-235 points
+            } else {
+                wealthScore += 235 + Math.log10(actualEthBalance / 100) * 30; // 235+ points
+            }
+        }
+
+        // Stablecoin scoring
+        if (stablecoinValue > 0) {
+            if (stablecoinValue < 1000) {
+                wealthScore += stablecoinValue * 0.01; // 0-10 points
+            } else if (stablecoinValue < 50000) {
+                wealthScore += 10 + (stablecoinValue - 1000) * 0.002; // 10-108 points
+            } else {
+                wealthScore += 108 + Math.log10(stablecoinValue / 50000) * 25; // 108+ points
+            }
+        }
+
+        // Other tokens (smaller weight)
+        wealthScore += Math.min(otherTokenValue * 0.001, 20);
+        wealthScore = Math.min(wealthScore, 200);
+
+        // Activity Score (0-50 points)
+        let activityScore = 0;
+        if (txCount > 0) {
+            if (txCount < 100) {
+                activityScore = txCount * 0.2; // 0-20 points
+            } else if (txCount < 1000) {
+                activityScore = 20 + (txCount - 100) * 0.05; // 20-65 points
+            } else {
+                activityScore = 65 + Math.log10(txCount / 1000) * 15; // 65+ points
+            }
+        }
+        activityScore = Math.min(activityScore, 80);
+
+        // Technical Score (0-80 points)
+        let technicalScore = 0;
+        if (isContractDeployer) {
+            technicalScore += 40; // Base contract deployment bonus
+            technicalScore += Math.min(contractDeployments * 10, 30); // Additional deployments
+        }
+        if (onchain.hasNFTs) {
+            technicalScore += 10; // NFT interaction bonus
+        }
+
+        // Governance Score (0-30 points)
+        const governanceScore = Math.min(daoVotes * 2, 30);
+
+        return {
+            wealth: Math.round(wealthScore),
+            activity: Math.round(activityScore),
+            technical: Math.round(technicalScore),
+            governance: Math.round(governanceScore)
+        };
+    }
+
+    private static determineRole(
+        github: GitHubStats, 
+        onchain: OnchainStats, 
+        githubScore: number, 
+        onchainScore: number
+    ): { role: ZKScoreResult['role'], confidence: number } {
+        
+        const totalContributions = github.totalContributions || 0;
+        const mergedPRs = github.mergedPRs || 0;
+        const issuesCreated = github.issuesCreated || 0;
+        const totalStars = github.topRepos?.reduce((sum, repo) => sum + (repo.stargazerCount || 0), 0) || 0;
+        
+        const rawEthBalance = parseFloat(onchain.ethBalance || "0");
+        const actualEthBalance = rawEthBalance > 1000000 ? rawEthBalance / 1e18 : rawEthBalance;
+        const stablecoinValue = onchain.tokenBalances?.reduce((sum, token) => {
+            if (['USDC', 'DAI', 'USDT', 'USDP', 'FRAX'].includes(token.symbol.toUpperCase())) {
                 return sum + (token.balance || 0);
             }
             return sum;
         }, 0) || 0;
 
-        return {
-            activity: txCount * this.WEIGHTS.onchain.txCount,
-            wealth: (ethBalance * this.WEIGHTS.onchain.ethBalance) + 
-                   (stablecoinValue * this.WEIGHTS.onchain.tokenValue),
-            defi: stablecoinValue > 1000 ? Math.log10(stablecoinValue) * 10 : 0,
-            technical: (isContractDeployer ? this.WEIGHTS.onchain.contractDeployer : 0) + 
-                      (hasNFTs ? this.WEIGHTS.onchain.nfts : 0)
-        };
-    }
+        const txCount = onchain.txCount || 0;
+        const isContractDeployer = onchain.isContractDeployer || false;
+        const contractDeployments = onchain.contractDeployments || 0;
 
-    /**
-     * FIXED: Determine user role based on GitHub vs Onchain score distribution
-     */
-    private static determineRole(githubScore: number, onchainScore: number): { role: ZKScoreResult['role'], confidence: number } {
-        const { github: ghThresh, onchain: ocThresh } = this.ROLE_THRESHOLDS;
+        // Role determination logic
+        let role: ZKScoreResult['role'] = 'Contributor';
+        let confidence = 50;
 
-        // Classify GitHub activity level
-        const githubLevel = githubScore >= ghThresh.high ? 'high' : 
-                           githubScore >= ghThresh.medium ? 'medium' : 
-                           githubScore >= ghThresh.low ? 'low' : 
-                           githubScore >= ghThresh.minimal ? 'minimal' : 'none';
+        // Founder criteria: Strong GitHub + meaningful onchain presence + technical activity
+        const isFounderGitHub = (
+            totalContributions >= this.GITHUB_THRESHOLDS.FOUNDER_MIN_CONTRIBUTIONS &&
+            (github.topRepos?.length || 0) >= this.GITHUB_THRESHOLDS.FOUNDER_MIN_REPOS &&
+            totalStars >= this.GITHUB_THRESHOLDS.FOUNDER_MIN_STARS
+        );
+        
+        const isFounderOnchain = (
+            actualEthBalance >= this.ONCHAIN_THRESHOLDS.FOUNDER_MIN_ETH &&
+            txCount >= this.ONCHAIN_THRESHOLDS.FOUNDER_MIN_TXS &&
+            (isContractDeployer || contractDeployments > 0)
+        );
 
-        // Classify Onchain activity level  
-        const onchainLevel = onchainScore >= ocThresh.high ? 'high' : 
-                            onchainScore >= ocThresh.medium ? 'medium' : 
-                            onchainScore >= ocThresh.low ? 'low' : 
-                            onchainScore >= ocThresh.minimal ? 'minimal' : 'none';
+        // Investor criteria: Significant wealth + active trading, limited GitHub
+        const isInvestorWealth = (
+            actualEthBalance >= this.ONCHAIN_THRESHOLDS.INVESTOR_MIN_ETH ||
+            stablecoinValue >= this.ONCHAIN_THRESHOLDS.INVESTOR_MIN_STABLECOINS
+        );
+        
+        const isInvestorActive = txCount >= this.ONCHAIN_THRESHOLDS.INVESTOR_MIN_TXS;
+        const hasLimitedGitHub = (
+            totalContributions < this.GITHUB_THRESHOLDS.CONTRIBUTOR_MIN_CONTRIBUTIONS ||
+            mergedPRs < this.GITHUB_THRESHOLDS.CONTRIBUTOR_MIN_PRS
+        );
 
-        let role: ZKScoreResult['role'];
-        let confidence: number;
+        // Contributor criteria: Strong GitHub activity
+        const isContributorGitHub = (
+            totalContributions >= this.GITHUB_THRESHOLDS.CONTRIBUTOR_MIN_CONTRIBUTIONS &&
+            (mergedPRs >= this.GITHUB_THRESHOLDS.CONTRIBUTOR_MIN_PRS || 
+             issuesCreated >= this.GITHUB_THRESHOLDS.CONTRIBUTOR_MIN_ISSUES)
+        );
 
-        // CORRECTED LOGIC: Check for zero/minimal onchain activity first
-        if (onchainScore <= 5 && githubScore >= ghThresh.minimal) {
-            // Clear GitHub activity with essentially zero onchain = Contributor
-            role = 'Contributor';
-            if (githubScore >= ghThresh.high) {
-                confidence = 95;
-            } else if (githubScore >= ghThresh.medium) {
-                confidence = 90;
-            } else if (githubScore >= ghThresh.low) {
-                confidence = 82;
-            } else {
-                confidence = 75;
-            }
-        }
-        // Check for zero/minimal GitHub activity with onchain activity
-        else if (githubScore <= 10 && onchainScore >= ocThresh.minimal) {
-            // Clear onchain activity with essentially zero GitHub = Investor
-            role = 'Investor';
-            if (onchainScore >= ocThresh.high) {
-                confidence = 93;
-            } else if (onchainScore >= ocThresh.medium) {
-                confidence = 88;
-            } else if (onchainScore >= ocThresh.low) {
-                confidence = 80;
-            } else {
-                confidence = 72;
-            }
-        }
-        // Both have significant activity
-        else if (githubLevel >= 'medium' && onchainLevel >= 'medium') {
+        // Determine role with priority: Founder > Investor > Contributor
+        if (isFounderGitHub && isFounderOnchain) {
             role = 'Founder';
-            const balanceRatio = Math.min(githubScore, onchainScore) / Math.max(githubScore, onchainScore);
-            confidence = Math.min(95, 70 + (balanceRatio * 25));
-        }
-        // Determine primary strength when both have some activity
-        else if (githubLevel >= 'low' && onchainLevel >= 'low') {
-            const githubDominance = githubScore / (githubScore + onchainScore);
-            if (githubDominance > 0.75) {
-                role = 'Contributor';
-                confidence = Math.min(85, 60 + (githubScore / 8));
-            } else if (githubDominance < 0.25) {
+            confidence = 85 + Math.min(10, (githubScore + onchainScore) / 50);
+        } else if (isInvestorWealth && isInvestorActive && hasLimitedGitHub) {
+            role = 'Investor';
+            confidence = 80 + Math.min(15, onchainScore / 20);
+        } else if (isContributorGitHub) {
+            role = 'Contributor';
+            confidence = 75 + Math.min(20, githubScore / 15);
+        } else {
+            // Fallback based on dominant score
+            if (onchainScore > githubScore * 2 && onchainScore > 50) {
                 role = 'Investor';
-                confidence = Math.min(85, 60 + (onchainScore / 6));
+                confidence = Math.min(70, 50 + onchainScore / 10);
+            } else if (githubScore > onchainScore && githubScore > 30) {
+                role = 'Contributor';
+                confidence = Math.min(70, 50 + githubScore / 10);
             } else {
-                // Balanced but not high enough for Founder
-                role = githubScore > onchainScore ? 'Contributor' : 'Investor';
-                confidence = Math.min(75, 50 + Math.abs(githubScore - onchainScore) / 10);
+                role = 'Contributor'; // Default
+                confidence = 50;
             }
         }
-        // Single area activity (low level)
-        else if (githubLevel >= 'minimal' && onchainLevel === 'none') {
-            role = 'Contributor';
-            confidence = Math.min(80, 50 + (githubScore / 10));
-        }
-        else if (onchainLevel >= 'minimal' && githubLevel === 'none') {
-            role = 'Investor';  
-            confidence = Math.min(80, 50 + (onchainScore / 8));
-        }
-        // Very minimal activity in both or neither
-        else {
-            role = 'Newcomer';
-            confidence = Math.max(85, 95 - (githubScore + onchainScore) / 4);
-        }
 
-        return { role, confidence: Math.round(confidence) };
-    }
-
-    /**
-     * Generate ZK-friendly hash of the calculation (for potential circom integration)
-     */
-    public static generateProofInputs(github: GitHubStats, onchain: OnchainStats) {
-        const inputs = {
-            contributions: github?.totalContributions || 0,
-            repos: github?.topRepos?.length || 0,
-            stars: github?.topRepos?.reduce((sum, repo) => sum + (repo.stargazerCount || 0), 0) || 0,
-            prs: github?.mergedPRs || 0,
-            issues: github?.issuesCreated || 0,
-            followers: github?.followers || 0,
-            contributedRepos: github?.contributedRepos || 0,
-            
-            ethBalance: Math.round((parseFloat(onchain?.balance?.toString() || '0')) * 1000),
-            txCount: onchain?.txCount || 0,
-            isContractDeployer: onchain?.isContractDeployer ? 1 : 0,
-            hasNFTs: onchain?.hasNFTs ? 1 : 0,
-            stablecoinBalance: Math.round((onchain?.tokenBalances?.reduce((sum, token) => {
-                if (['USDC', 'DAI', 'USDT'].includes(token.symbol)) {
-                    return sum + (token.balance || 0);
-                }
-                return sum;
-            }, 0) || 0) * 100)
+        return { 
+            role, 
+            confidence: Math.max(50, Math.min(95, Math.round(confidence))) 
         };
-
-        return inputs;
-    }
-
-    /**
-     * Create a simple hash for ZK proof
-     */
-    public static createScoreHash(result: ZKScoreResult): string {
-        const dataString = `${result.totalScore}-${result.githubScore}-${result.onchainScore}-${result.role}`;
-        let hash = 0;
-        for (let i = 0; i < dataString.length; i++) {
-            const char = dataString.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return Math.abs(hash).toString(16);
     }
 }
-
-// Legacy function for backward compatibility
-export function calculateZkScore(github: GitHubStats, onchain: OnchainStats): number {
-    const result = ZKScoreCalculator.calculateZkScore(github, onchain);
-    return result.totalScore;
-}
-
-// Role descriptions for UI display
-export const ROLE_DESCRIPTIONS = {
-    Founder: {
-        description: "High activity in both development and onchain. Likely building and using DeFi protocols.",
-        characteristics: ["Active developer", "Significant capital", "Technical expertise", "Market participant"]
-    },
-    Contributor: {
-        description: "Strong GitHub presence with minimal onchain activity. Focused on building.",
-        characteristics: ["Open source contributor", "Technical skills", "Limited trading", "Developer-focused"]
-    },
-    Investor: {
-        description: "High onchain activity with limited development. Focused on DeFi and trading.",
-        characteristics: ["Active trader", "DeFi user", "Capital deployment", "Market-focused"]
-    },
-    Newcomer: {
-        description: "Limited activity in both areas. New to the ecosystem or exploring.",
-        characteristics: ["Learning phase", "Minimal activity", "Potential growth", "Ecosystem explorer"]
-    }
-};
-
-export default ZKScoreCalculator;

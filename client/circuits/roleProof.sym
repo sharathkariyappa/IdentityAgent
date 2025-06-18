@@ -1,0 +1,12 @@
+1,1,0,main.verifiedRole
+2,2,0,main.githubScore
+3,3,0,main.onchainScore
+4,-1,0,main.claimedRole
+5,4,0,main.githubTimes2
+6,5,0,main.onchainTimes2
+7,-1,0,main.isContributor
+8,-1,0,main.isInvestor
+9,-1,0,main.isFounder
+10,-1,0,main.computedRole
+11,6,0,main.contribDiff
+12,7,0,main.roleCheck
