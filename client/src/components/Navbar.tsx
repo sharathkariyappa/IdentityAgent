@@ -21,8 +21,8 @@ const Navbar: React.FC<NavbarProps> = ({ sidebarCollapsed = false }) => {
     }, []);
 
     const navigationItems = [
-        { label: 'About', href: '#' },
-        { label: 'Features', href: '#' },
+        { label: 'About', href: '/about' },
+        { label: 'Features', href: '/features' },
         { label: 'Docs', href: '#' }
     ];
 

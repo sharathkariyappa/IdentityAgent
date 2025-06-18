@@ -257,7 +257,7 @@ const Profile: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-2000"></div>
       </div>
 
-      <div className="relative z-10 max-w-2xl mx-auto">
+      <div className="relative z-10 flex flex-col h-full p-6 w-full">
         {/* Main Card */}
         <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl">
           {/* Header */}

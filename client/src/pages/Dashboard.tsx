@@ -32,12 +32,12 @@ const WalletNotConnected = () => (
 
     <div className="relative z-10 flex flex-col h-full p-6 w-full">
       <div className="flex-1 flex items-center justify-center">
-        <div className="max-w-2xl mx-auto w-full">
+        <div className="max-w-2xl w-full">
           <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
-            <div className="p-12">
+            <div className="p-8">
               <div className="text-center">
                 {/* Hero Icon */}
-                <div className="relative mx-auto mb-8">
+                <div className="relative  mb-8">
                   <div className="p-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl w-32 h-32 mx-auto flex items-center justify-center shadow-2xl transform hover:scale-105 transition-all duration-300">
                     <Wallet className="w-16 h-16 text-white" />
                   </div>
@@ -66,19 +66,19 @@ const WalletNotConnected = () => (
                       {
                         icon: Github,
                         title: "Link GitHub",
-                        description: "Connect your GitHub account to verify your contributions",
+                        description: "Connect your GitHub account to verify contributions",
                         color: "from-green-500 to-emerald-600"
                       },
                       {
                         icon: User,
                         title: "Select Role",
-                        description: "Choose your role: Contributor, Founder, or Investor",
+                        description: "Choose your role: Contributor, Founder, Investor",
                         color: "from-blue-500 to-cyan-600"
                       },
                       {
                         icon: Lock,
                         title: "Generate Proof",
-                        description: "Create your ZK proof for secure verification",
+                        description: "Create your ZK proof for secure verification process",
                         color: "from-purple-500 to-pink-600"
                       }
                     ].map((step, index) => (
@@ -325,7 +325,7 @@ export default function Dashboard() {
 
           <div className="relative z-10 flex flex-col h-full p-6 w-full">
             <div className="flex-1 flex items-center justify-center">
-              <div className="max-w-4xl mx-auto w-full">
+              <div className="w-full">
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
                   <div className="p-12">
                     {/* Header */}
