@@ -1,10 +1,8 @@
-import React from 'react';
+
 import { 
   Shield, 
-  Brain, 
   Eye, 
   GitBranch, 
-  CheckCheck, 
   Users,
   Sparkles,
   ArrowRight,

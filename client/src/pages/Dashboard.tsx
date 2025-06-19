@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { fetchGitHubContributorData } from '../utils/fetchGitHubMetrics';
 import { fetchOnchainStats } from '../utils/fetchOnchainStats';
-import { RealisticZKScoreCalculator } from '../utils/calculateZkScore';
+// import { RealisticZKScoreCalculator } from '../utils/calculateZkScore';
 import * as snarkjs from "snarkjs";
 import { 
   Wallet, 
@@ -17,7 +17,6 @@ import {
   ArrowRight,
   Sparkles,
   Lock,
-  Zap,
   Loader2
 } from 'lucide-react';
 

@@ -97,7 +97,7 @@ const WalletNotConnected: React.FC = () => (
 );
 
 const Profile: React.FC = () => {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [role, setRole] = useState<RoleType>('Verifying...');
   const [githubUsername, setGithubUsername] = useState<string>('Loading...');
   const [isLoading, setIsLoading] = useState<boolean>(true);

@@ -1,11 +1,8 @@
 import { 
   ShieldCheck, 
   EyeOff, 
-  BarChart3, 
-  Users, 
   Brain, 
   KeyRound, 
-  Code2, 
   Zap, 
   SearchCheck,
   Sparkles,
@@ -13,7 +10,6 @@ import {
   Lock,
   Shield
 } from 'lucide-react';
-import React from 'react';
 
 const features = [
   {

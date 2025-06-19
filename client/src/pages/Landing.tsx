@@ -1,15 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Zap, Users, TrendingUp, Lock, Database, ArrowRight, CheckCircle, Star, Github, Twitter, Linkedin, Brain, Eye, GitBranch, Target, Globe, Heart } from 'lucide-react';
+import { useState } from 'react';
+import { Shield, Zap, Users, TrendingUp, Lock, Database, ArrowRight, CheckCircle, Star, Github, Twitter, Linkedin, Brain, Eye, GitBranch, Target, Globe } from 'lucide-react';
 
 const IdentityAgentLanding = () => {
   const [activeRole, setActiveRole] = useState('founder');
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const roles = [
     { id: 'founder', label: 'Founder', icon: Zap, color: 'from-purple-500 to-pink-500' },
