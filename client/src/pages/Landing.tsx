@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Zap, Users, TrendingUp, Lock, Database, ArrowRight, CheckCircle, Star, Github, Twitter, Linkedin, Brain, Eye, GitBranch, Target, Globe } from 'lucide-react';
 
 const IdentityAgentLanding = () => {
+  const navigate = useNavigate();
   const [activeRole, setActiveRole] = useState('founder');
 
   const roles = [
@@ -91,8 +93,8 @@ const IdentityAgentLanding = () => {
               <div className="text-xs text-gray-500">ZK-Verified Identity</div>
             </div>
           </div>
-          <button 
-            onClick={() => window.location.href = '/dashboard'}
+          <button
+            onClick={() => navigate('/dashboard')}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             Launch App
