@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAccount} from 'wagmi';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { fetchGitHubContributorData } from '../utils/fetchGitHubMetrics';
 import { fetchOnchainStats } from '../utils/fetchOnchainStats';
@@ -16,113 +17,117 @@ import {
   ArrowRight,
   Sparkles,
   Lock,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react';
 
-// Wallet not connected component with enhanced UI
+// Wallet not connected component with clean styling
 const WalletNotConnected = () => (
-  <>
-  <div className="flex-1 w-full bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 text-white relative overflow-hidden">
-    {/* Animated Background Elements */}
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute -top-20 -right-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-2000"></div>
+  <div className="w-full h-full bg-gray-50">
+    {/* Header */}
+    <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+          <Wallet className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Welcome to IdentityAgent</h1>
+          <p className="text-sm text-gray-600">Zero-Knowledge Verified Profiles</p>
+        </div>
+      </div>
     </div>
 
-    <div className="relative z-10 flex flex-col h-full p-6 w-full">
-      <div className="flex-1 flex items-center justify-center">
-        <div className="max-w-2xl w-full">
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
-            <div className="p-8">
-              <div className="text-center">
-                {/* Hero Icon */}
-                <div className="relative  mb-8">
-                  <div className="p-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl w-32 h-32 mx-auto flex items-center justify-center shadow-2xl transform hover:scale-105 transition-all duration-300">
-                    <Wallet className="w-16 h-16 text-white" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2 shadow-lg animate-bounce">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-4">
-                  Welcome to IdentityAgent
-                </h1>
-                <p className="text-xl text-gray-300 mb-12 leading-relaxed max-w-lg mx-auto">
-                  Connect your wallet to begin your journey into the world of zero-knowledge verified profiles.
-                </p>
-                
-                {/* Setup Steps */}
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 mb-8">
-                  <div className="flex items-center justify-center space-x-2 mb-6">
-                    <Shield className="w-6 h-6 text-purple-400" />
-                    <h3 className="text-2xl font-bold text-white">Setup Your Profile</h3>
-                  </div>
-                  
-                  <div className="grid gap-6 md:grid-cols-3">
-                    {[
-                      {
-                        icon: Github,
-                        title: "Link GitHub",
-                        description: "Connect your GitHub account to verify contributions",
-                        color: "from-green-500 to-emerald-600"
-                      },
-                      {
-                        icon: User,
-                        title: "Select Role",
-                        description: "Choose your role: Contributor, Founder, Investor",
-                        color: "from-blue-500 to-cyan-600"
-                      },
-                      {
-                        icon: Lock,
-                        title: "Generate Proof",
-                        description: "Create your ZK proof for secure verification process",
-                        color: "from-purple-500 to-pink-600"
-                      }
-                    ].map((step, index) => (
-                      <div key={index} className="group relative">
-                        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
-                          <div className={`p-4 bg-gradient-to-r ${step.color} rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-xl`}>
-                            <step.icon className="w-8 h-8 text-white" />
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2">{step.title}</h4>
-                          <p className="text-sm text-gray-300 leading-relaxed">{step.description}</p>
-                        </div>
-                        
-                        {/* Step connector */}
-                        {index < 2 && (
-                          <div className="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2">
-                            <ArrowRight className="w-6 h-6 text-purple-400" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Security Notice */}
-                <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/20 rounded-2xl p-6 backdrop-blur-sm">
-                  <div className="flex items-center justify-center space-x-3 mb-3">
-                    <div className="p-2 bg-green-500/20 rounded-full">
-                      <AlertCircle className="w-5 h-5 text-green-400" />
-                    </div>
-                    <span className="text-lg font-semibold text-green-400">Secure & Private</span>
-                  </div>
-                  <p className="text-gray-300 leading-relaxed">
-                    Your GitHub data and role are cryptographically verified using zero-knowledge proofs. 
-                    Your privacy is protected while maintaining verifiable authenticity.
-                  </p>
-                </div>
+    {/* Content */}
+    <div className="p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div className="text-center">
+            {/* Hero Icon */}
+            <div className="relative mb-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg">
+                <Wallet className="w-10 h-10 text-white" />
               </div>
+              <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2 shadow-lg">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Connect Your Wallet
+            </h2>
+            <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+              Connect your wallet to begin your journey into the world of zero-knowledge verified profiles.
+            </p>
+            
+            {/* Setup Steps */}
+            <div className="bg-gray-50 rounded-xl p-8 mb-8">
+              <div className="flex items-center justify-center space-x-2 mb-6">
+                <Shield className="w-6 h-6 text-purple-500" />
+                <h3 className="text-xl font-semibold text-gray-900">Setup Your Profile</h3>
+              </div>
+              
+              <div className="grid gap-6 md:grid-cols-3">
+                {[
+                  {
+                    icon: Github,
+                    title: "Link GitHub",
+                    description: "Connect your GitHub account to verify contributions",
+                    color: "from-green-500 to-emerald-500"
+                  },
+                  {
+                    icon: User,
+                    title: "Select Role",
+                    description: "Choose your role: Contributor, Founder, Investor",
+                    color: "from-blue-500 to-cyan-500"
+                  },
+                  {
+                    icon: Lock,
+                    title: "Generate Proof",
+                    description: "Create your ZK proof for secure verification",
+                    color: "from-purple-500 to-pink-500"
+                  }
+                ].map((step, index) => (
+                  <div key={index} className="relative">
+                    <div className="bg-white rounded-lg p-6 border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <div className={`w-12 h-12 bg-gradient-to-r ${step.color} rounded-lg mx-auto mb-4 flex items-center justify-center shadow-sm`}>
+                        <step.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">{step.title}</h4>
+                      <p className="text-sm text-gray-600">{step.description}</p>
+                    </div>
+                    
+                    {/* Step connector */}
+                    {index < 2 && (
+                      <div className="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
+                        <div className="w-6 h-6 bg-white rounded-full border-2 border-gray-200 flex items-center justify-center">
+                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-center justify-center space-x-3 mb-3">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4 text-green-600" />
+                </div>
+                <span className="text-lg font-semibold text-green-800">Secure & Private</span>
+              </div>
+              <p className="text-gray-700">
+                Your GitHub data and role are cryptographically verified using zero-knowledge proofs. 
+                Your privacy is protected while maintaining verifiable authenticity.
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  </>
 );
 
 export default function Dashboard() {
@@ -179,8 +184,33 @@ export default function Dashboard() {
 
   const handleLinkGithub = () => {
     const client_id = import.meta.env.VITE_GITHUB_CLIENT_ID;
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=http://localhost:4000/api/github/callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=https://identitybackend.onrender.com/api/github/callback`;
   };
+
+  function buildFinalProfile (
+    githubStats: any,
+    onchainStats: any,
+  ) {
+    return {
+      totalContributions: githubStats.totalContributions,
+      pullRequests: githubStats.totalPRs,
+      issues: githubStats.issuesCreated,
+      repositoriesContributedTo: githubStats.contributedRepos,
+      followers: githubStats.followers,
+      repositories: githubStats.topRepos.length,
+      ethBalance: onchainStats.ethBalance,
+      txCount: onchainStats.txCount,
+      isContractDeployer: onchainStats.isContractDeployer,
+      contractDeployments: onchainStats.contractDeployments,
+      tokenBalances: onchainStats.tokenBalances.reduce(
+        (sum: number, token: any) => sum + token.balance,
+        0
+      ),
+      nftCount: onchainStats.nftCount,
+      daoVotes: onchainStats.daoVotes,
+      hasNFTs: onchainStats.hasNFTs,
+    };
+  }
 
   const saveProfile = async () => {
     const token = localStorage.getItem("access_token");
@@ -202,21 +232,26 @@ export default function Dashboard() {
         fetchGitHubContributorData(token, githubUser),
         fetchOnchainStats(address),
       ]);
-  
+      // console.log("GitHub Stats:", githubStats);
+      // console.log("Onchain Stats:", onchainStats);
       if (!githubStats) {
         throw new Error("Failed to fetch GitHub stats");
       }
 
       setProofStatus("🔄 Calculating scores...");
-      const result = RealisticZKScoreCalculator.calculateZkScore(githubStats, onchainStats);
+      // const result = RealisticZKScoreCalculator.calculateZkScore(githubStats, onchainStats);
+      const finalProfile = buildFinalProfile(githubStats, onchainStats);
+      // console.log("Final Profile:", finalProfile);
+      const flaskResponse = await axios.post("https://identitybackend.onrender.com/api/calculate-role", finalProfile); 
+      // console.log("Flask Response:", flaskResponse.data);
 
-      const githubScore = result.githubScore;
-      const onchainScore = result.onchainScore;
-      const calculatedRole = result.role;
+      const githubScore = flaskResponse.data.githubScore;
+      const onchainScore = flaskResponse.data.onchainScore;
+      const calculatedRole = flaskResponse.data.role;
       
-      console.log("GitHub Score:", githubScore);
-      console.log("Onchain Score:", onchainScore);
-      console.log("Calculated Role:", calculatedRole);
+      // console.log("GitHub Score:", githubScore);
+      // console.log("Onchain Score:", onchainScore);
+      // console.log("Calculated Role:", calculatedRole);
 
       // Convert role strings to numbers for circuit
       const roleToNumber = (roleStr: string): number => {
@@ -245,7 +280,7 @@ export default function Dashboard() {
         claimedRole: claimedRoleNum
       };
 
-      console.log("Circuit input:", input);
+      // console.log("Circuit input:", input);
       setProofStatus("🔄 Loading ZK files...");
 
       // Load ZK files with better error handling
@@ -283,8 +318,8 @@ export default function Dashboard() {
         throw new Error("ZK proof verification failed");
       }
 
-      console.log("✅ ZK Proof verified successfully!");
-      console.log("🪪 Proven Role:", publicSignals[0]);
+      // console.log("✅ ZK Proof verified successfully!");
+      // console.log("🪪 Proven Role:", publicSignals[0]);
       
       setProofStatus("✅ Proof generated and verified!");
       
@@ -301,169 +336,156 @@ export default function Dashboard() {
   };
 
   const getStatusIcon = (status: string) => {
-    if (status.includes('✅')) return <CheckCircle className="w-5 h-5 text-green-400" />;
-    if (status.includes('❌')) return <AlertCircle className="w-5 h-5 text-red-400" />;
-    return <Zap className="w-5 h-5 text-blue-400 animate-pulse" />;
+    if (status.includes('✅')) return <CheckCircle className="w-5 h-5 text-green-600" />;
+    if (status.includes('❌')) return <AlertCircle className="w-5 h-5 text-red-600" />;
+    return <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />;
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('✅')) return 'from-green-900/20 to-emerald-900/20 border-green-500/20';
-    if (status.includes('❌')) return 'from-red-900/20 to-pink-900/20 border-red-500/20';
-    return 'from-blue-900/20 to-purple-900/20 border-blue-500/20';
+    if (status.includes('✅')) return 'bg-green-50 border-green-200';
+    if (status.includes('❌')) return 'bg-red-50 border-red-200';
+    return 'bg-blue-50 border-blue-200';
   };
 
   return (
     <>
       {isConnected ? (
-        <div className="flex-1 w-full bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 text-white relative overflow-hidden">
-          {/* Animated Background Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute -top-20 -right-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-            <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-2000"></div>
+        <div className="w-full h-full bg-gray-50">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <Settings className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Setup Your Profile</h1>
+                <p className="text-sm text-gray-600">Complete your zero-knowledge verified profile</p>
+              </div>
+              <div className="ml-auto flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-full border border-green-200">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="text-xs text-green-700 font-medium">Connected</span>
+              </div>
+            </div>
           </div>
 
-          <div className="relative z-10 flex flex-col h-full p-6 w-full">
-            <div className="flex-1 flex items-center justify-center">
-              <div className="w-full">
-                <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
-                  <div className="p-12">
-                    {/* Header */}
-                    <div className="text-center mb-12">
-                      <div className="flex items-center justify-center space-x-4 mb-6">
-                        <div className="p-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-2xl">
-                          <Settings className="w-8 h-8 text-white" />
+          {/* Content */}
+          <div className="p-6">
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* GitHub Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Github className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900">GitHub Profile Connection</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <button
+                    onClick={handleLinkGithub}
+                    disabled={isGeneratingProof}
+                    className={`
+                      inline-flex items-center space-x-3 px-6 py-3 rounded-lg font-medium transition-all duration-200
+                      ${githubLinked 
+                        ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' 
+                        : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                      }
+                      ${isGeneratingProof ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-sm'}
+                    `}
+                  >
+                    {githubLinked ? <CheckCircle className="w-5 h-5" /> : <Github className="w-5 h-5" />}
+                    <span>{githubLinked ? 'GitHub Connected' : 'Connect GitHub'}</span>
+                  </button>
+                  
+                  {githubUser && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                          <User className="w-4 h-4 text-green-600" />
                         </div>
-                        <h2 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                          Setup Your Profile
-                        </h2>
-                      </div>
-                      <p className="text-gray-300 text-lg">
-                        Complete your zero-knowledge verified profile in just a few steps
-                      </p>
-                    </div>
-
-                    {/* GitHub Section */}
-                    <div className="mb-8">
-                      <label className="block text-lg font-semibold text-white mb-4 flex items-center space-x-3">
-                        <Github className="w-6 h-6" />
-                        <span>GitHub Profile Connection</span>
-                      </label>
-                      
-                      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                        <button
-                          onClick={handleLinkGithub}
-                          disabled={isGeneratingProof}
-                          className={`
-                            px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl
-                            ${githubLinked 
-                              ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white' 
-                              : 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white'
-                            }
-                            ${isGeneratingProof ? 'opacity-50 cursor-not-allowed' : ''}
-                          `}
-                        >
-                          <div className="flex items-center space-x-3">
-                            {githubLinked ? <CheckCircle className="w-6 h-6" /> : <Github className="w-6 h-6" />}
-                            <span>{githubLinked ? 'GitHub Connected' : 'Connect GitHub'}</span>
-                          </div>
-                        </button>
-                        
-                        {githubUser && (
-                          <div className="mt-4 p-4 bg-green-900/20 border border-green-500/20 rounded-xl">
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-green-500/20 rounded-full">
-                                <User className="w-5 h-5 text-green-400" />
-                              </div>
-                              <div>
-                                <p className="text-green-400 font-semibold">Connected Successfully</p>
-                                <p className="text-green-300">@{githubUser}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Role Selection */}
-                    <div className="mb-8">
-                      <label className="block text-lg font-semibold text-white mb-4 flex items-center space-x-3">
-                        <User className="w-6 h-6" />
-                        <span>Select Your Role</span>
-                      </label>
-                      
-                      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                        <select
-                          value={role}
-                          onChange={(e) => setRole(e.target.value)}
-                          disabled={isGeneratingProof}
-                          className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4 text-white text-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 disabled:opacity-50"
-                        >
-                          <option value="" className="bg-slate-800 text-white">Choose your role...</option>
-                          <option value="Investor" className="bg-slate-800 text-white">💼 Investor - Fund and support projects</option>
-                          <option value="Founder" className="bg-slate-800 text-white">🚀 Founder - Build and lead projects</option>
-                          <option value="Contributor" className="bg-slate-800 text-white">👨‍💻 Contributor - Develop and contribute code</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Status Display */}
-                    {proofStatus && (
-                      <div className={`mb-8 p-6 bg-gradient-to-r ${getStatusColor(proofStatus)} backdrop-blur-sm border rounded-2xl`}>
-                        <div className="flex items-center space-x-3">
-                          {getStatusIcon(proofStatus)}
-                          <div>
-                            <p className="text-lg font-semibold text-white">Processing Status</p>
-                            <p className="text-gray-300">{proofStatus}</p>
-                          </div>
+                        <div>
+                          <p className="font-medium text-green-800">Connected Successfully</p>
+                          <p className="text-sm text-green-600">@{githubUser}</p>
                         </div>
-                        
-                        {isGeneratingProof && (
-                          <div className="mt-4">
-                            <div className="w-full bg-white/10 rounded-full h-2">
-                              <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                    {/* Action Button */}
-                    <button
-                      onClick={saveProfile}
-                      disabled={isGeneratingProof || !role || !githubLinked}
-                      className={`
-                        w-full py-6 rounded-2xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl
-                        ${isGeneratingProof || !role || !githubLinked
-                          ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white hover:shadow-purple-500/25'
-                        }
-                      `}
-                    >
-                      <div className="flex items-center justify-center space-x-3">
-                        {isGeneratingProof ? (
-                          <>
-                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Generating Proof...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Shield className="w-6 h-6" />
-                            <span>Generate ZK Proof & Save Profile</span>
-                          </>
-                        )}
-                      </div>
-                    </button>
+              {/* Role Selection */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <User className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900">Select Your Role</h3>
+                </div>
+                
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={isGeneratingProof}
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 disabled:opacity-50 disabled:bg-gray-50"
+                >
+                  <option value="">Choose your role...</option>
+                  <option value="Investor">💼 Investor - Fund and support projects</option>
+                  <option value="Founder">🚀 Founder - Build and lead projects</option>
+                  <option value="Contributor">👨‍💻 Contributor - Develop and contribute code</option>
+                </select>
+              </div>
 
-                    {/* Helper Text */}
-                    <div className="mt-6 text-center">
-                      <p className="text-gray-400 text-sm">
-                        By generating your proof, you're creating a cryptographically secure verification 
-                        of your role and contributions while maintaining complete privacy.
-                      </p>
+              {/* Status Display */}
+              {proofStatus && (
+                <div className={`p-4 border rounded-lg ${getStatusColor(proofStatus)}`}>
+                  <div className="flex items-center space-x-3">
+                    {getStatusIcon(proofStatus)}
+                    <div>
+                      <p className="font-medium text-gray-900">Processing Status</p>
+                      <p className="text-sm text-gray-600">{proofStatus}</p>
                     </div>
                   </div>
+                  
+                  {isGeneratingProof && (
+                    <div className="mt-4">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* Action Button */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <button
+                  onClick={saveProfile}
+                  disabled={isGeneratingProof || !role || !githubLinked}
+                  className={`
+                    w-full py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center space-x-3
+                    ${isGeneratingProof || !role || !githubLinked
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 hover:shadow-lg transform hover:scale-[1.02]'
+                    }
+                  `}
+                >
+                  {isGeneratingProof ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Generating Proof...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-5 h-5" />
+                      <span>Generate ZK Proof & Save Profile</span>
+                    </>
+                  )}
+                </button>
+
+                <p className="mt-4 text-sm text-gray-500 text-center">
+                  By generating your proof, you're creating a cryptographically secure verification 
+                  of your role and contributions while maintaining complete privacy.
+                </p>
               </div>
             </div>
           </div>

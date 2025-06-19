@@ -23,7 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ sidebarCollapsed = false }) => {
     const navigationItems = [
         { label: 'About', href: '/about' },
         { label: 'Features', href: '/features' },
-        { label: 'Docs', href: '#' }
+        { label: 'Docs', href: '/documentation' }
     ];
 
     return (

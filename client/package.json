@@ -12,6 +12,7 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.7",
     "@tailwindcss/vite": "^4.1.10",
+    "axios": "^1.10.0",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "lucide-react": "^0.516.0",

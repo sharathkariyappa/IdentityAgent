@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import Home from './pages/Home';
 import FeaturesPage from './pages/FeaturesPage';
 import About from './pages/About';
+import Documentation from './pages/Documentation';
 import './App.css';
 
 const AppWrapper: React.FC = () => {
@@ -18,7 +19,7 @@ const AppWrapper: React.FC = () => {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const showNavbar = location.pathname !== '/';
-  const showSidebar = ['/dashboard', '/profile', '/features', '/about'].includes(location.pathname);
+  const showSidebar = ['/dashboard', '/profile', '/features', '/about', '/documentation'].includes(location.pathname);
 
   const handleSidebarNavigation = (path: string) => {
     navigate(path);
@@ -47,6 +48,7 @@ const AppWrapper: React.FC = () => {
           <Route path="/github/callback" element={<GithubCallback />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<About />} />
+          <Route path="/documentation" element={<Documentation />} />
         </Routes>
       </div>
     </div>

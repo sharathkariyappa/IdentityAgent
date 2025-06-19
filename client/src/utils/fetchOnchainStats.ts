@@ -1,5 +1,5 @@
 export async function fetchOnchainStats(walletAddress: string) {
-  const res = await fetch(`http://localhost:4000/api/onchain-stats?address=${walletAddress}`);
+  const res = await fetch(`https://identitybackend.onrender.com/api/onchain-stats?address=${walletAddress}`);
 
   if (!res.ok) throw new Error("Failed to fetch onchain stats");
 

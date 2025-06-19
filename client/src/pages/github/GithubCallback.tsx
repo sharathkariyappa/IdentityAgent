@@ -25,7 +25,7 @@ const GithubCallback = () => {
     } else if (code) {
       // Only redirect if data is NOT already present
       console.log("No user data, redirecting to backend to fetch...");
-      window.location.href = `http://localhost:4000/api/github/callback?code=${code}`;
+      window.location.href = `https://identitybackend.onrender.com/api/github/callback?code=${code}`;
     } else {
       console.error('GitHub callback error: No user data found.');
     }
