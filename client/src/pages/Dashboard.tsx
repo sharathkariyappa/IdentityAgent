@@ -279,7 +279,7 @@ export default function Dashboard() {
         claimedRole: claimedRoleNum
       };
 
-      // console.log("Circuit input:", input);
+      console.log("Circuit input:", input);
       setProofStatus("🔄 Loading ZK files...");
 
       // Load ZK files with better error handling
@@ -297,21 +297,24 @@ export default function Dashboard() {
           return res.json();
         })
       ]);
+      console.log("WASM, Zkey, Verification Key loaded successfully");
 
       setProofStatus("🔄 Calculating witness...");
       const witnessCalculatorBuilder = await loadWitnessCalculator();
       const wc = await witnessCalculatorBuilder(wasmBuffer);
       const witness = await wc.calculateWTNSBin(input, 0);
-
+      console.log("Witness calculated successfully");
       setProofStatus("🔄 Generating ZK proof...");
       const { proof, publicSignals } = await snarkjs.groth16.prove(new Uint8Array(zkeyBuffer), witness);
-      
+      console.log("ZK proof generated successfully");
       // Store proof data
       localStorage.setItem("zkProof", JSON.stringify(proof));
       localStorage.setItem("zkPublicSignals", JSON.stringify(publicSignals));
+      console.log("Proof and public signals stored in localStorage");
 
       setProofStatus("🔄 Verifying proof...");
       const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
+      console.log("Proof verification result:", verified);
       
       if (!verified) {
         throw new Error("ZK proof verification failed");
