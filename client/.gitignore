@@ -16,6 +16,8 @@ dist-ssr
 !vercel.json
 *.wtns
 *.zkey
+!roleProof_final.zkey
+!verification_key.json
 *.ptau
 
 # Editor directories and files

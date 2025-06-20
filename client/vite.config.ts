@@ -5,7 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: '/',
   plugins: [react(), tailwindcss()],
+  assetsInclude: ['**/*.zkey', '**/*.wasm', '**/*.json'],
   build: {
-    outDir: 'dist',
+    outDir: 'dist'
   }
 })
+
