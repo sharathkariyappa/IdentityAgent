@@ -168,7 +168,7 @@ export default function Dashboard() {
       return (window as any).witnessCalculatorBuilder;
     } catch (error) {
       console.error("Failed to load witness calculator:", error);
-      throw new Error("❌ Failed to load witness_calculator.js");
+      throw new Error("Failed to load witness_calculator.js");
     }
   };
   
@@ -215,7 +215,7 @@ export default function Dashboard() {
     const token = localStorage.getItem("access_token");
   
     if (!role || !githubUser || !token || !address) {
-      setProofStatus("❌ Missing required information");
+      setProofStatus(" Missing required information");
       console.warn("Missing info: role, GitHub user, token, or wallet");
       return;
     }
@@ -267,7 +267,7 @@ export default function Dashboard() {
 
       // Check if claimed role matches calculated role
       if (claimedRoleNum !== calculatedRoleNum) {
-        setProofStatus(`❌ Role mismatch: You claimed ${role} but your scores indicate ${calculatedRole}`);
+        setProofStatus(`Role mismatch: You claimed ${role} but your scores indicate ${calculatedRole}`);
         setIsGeneratingProof(false);
         return;
       }
@@ -331,8 +331,8 @@ export default function Dashboard() {
       }, 2000);
 
     } catch (error) {
-      console.error("❌ Failed during saveProfile:", error);
-      setProofStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Failed during saveProfile:", error);
+      setProofStatus(` Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsGeneratingProof(false);
     }
   };
@@ -431,9 +431,9 @@ export default function Dashboard() {
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 disabled:opacity-50 disabled:bg-gray-50"
                 >
                   <option value="">Choose your role...</option>
-                  <option value="Investor">💼 Investor - Fund and support projects</option>
-                  <option value="Founder">🚀 Founder - Build and lead projects</option>
-                  <option value="Contributor">👨‍💻 Contributor - Develop and contribute code</option>
+                  <option value="Investor"> Investor - Fund and support projects</option>
+                  <option value="Founder"> Founder - Build and lead projects</option>
+                  <option value="Contributor"> Contributor - Develop and contribute code</option>
                 </select>
               </div>
 

@@ -6,6 +6,9 @@ export default defineConfig({
   base: '/',
   plugins: [react(), tailwindcss()],
   assetsInclude: ['**/*.zkey', '**/*.wasm', '**/*.json'],
+  define: {
+    'process.env': {}
+  },
   build: {
     outDir: 'dist'
   }

@@ -1,4 +1,5 @@
 // src/main.tsx
+(window as any).process = { env: {} }
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'

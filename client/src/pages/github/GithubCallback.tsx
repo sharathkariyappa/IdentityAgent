@@ -16,7 +16,7 @@ const GithubCallback = () => {
     if (data) {
       try {
         const user = JSON.parse(decodeURIComponent(data));
-        console.log('GitHub user:', user);
+        // console.log('GitHub user:', user);
         localStorage.setItem('githubUser', JSON.stringify(user));
         navigate('/dashboard');
       } catch (err) {
