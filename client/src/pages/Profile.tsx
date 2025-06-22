@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { groth16 } from 'snarkjs';
 import { User, Shield, AlertCircle, CheckCircle, Loader2, Github, Award, Copy, Check, Globe, Hash, Eye, Key, Download,Fingerprint} from 'lucide-react';
 import { useAccount, useChainId } from 'wagmi';
-import { createProfileWorkflowSimple } from '../utils/ceramic';
+import { createProfileWorkflowSimple, loadProfileFromIPFS } from '../utils/ceramic';
 
 // Type definitions
 interface UserProfile {
@@ -307,7 +307,8 @@ const Profile: React.FC = () => {
 
       // Try to create VC with GitHub username and verified role
       const result = await createProfileWorkflowSimple(githubUsername, zkRole, networkName);
-      
+      console.log(result.ipfsHash)
+      localStorage.setItem('ipfsHash', result.ipfsHash);
       // console.log('DID profile result:', result);
 
       if (result && result.verification) {
@@ -327,7 +328,7 @@ const Profile: React.FC = () => {
               github: githubUsername,
               role: zkRole,
               address: address || '',
-              network: 'sepolia',
+              network: networkName,
               timestamp: Date.now()
             },
             verifiableCredential: result.vcJwt || '',
@@ -335,7 +336,7 @@ const Profile: React.FC = () => {
               created: new Date().toISOString(),
               version: '1.0',
               type: 'VerifiableCredential',
-              network: 'sepolia'
+              network: networkName
             }
           };
           // console.log('Using fallback profile data:', fallbackProfileData);
@@ -351,6 +352,26 @@ const Profile: React.FC = () => {
       setVcStatus('error');
     }
   }, [githubUsername, zkRole, zkStatus, address]);
+
+  useEffect(() => {
+    const ipfsHash = localStorage.getItem('ipfsHash');
+    if (ipfsHash) {
+      const fetchData = async () => {
+        try {
+          const result = await loadProfileFromIPFS(ipfsHash);
+          if (result) {
+            setProfileData(result.profileData);
+            setVcStatus('success') 
+            setIsVcValid(true)
+          }
+        } catch (error) {
+          console.error('Failed to load profile from IPFS:', error);
+        }
+      };
+      fetchData();
+    }
+  }, []);
+  
 
   // Export profile data
   const exportProfileData = useCallback(() => {
@@ -570,19 +591,6 @@ const Profile: React.FC = () => {
                 </div>
                 <VerifiedBadge isValid={isVcValid} vcJwt={vcJwt || undefined} />
               </div>
-
-              {/* Debug Information */}
-              {isConnected && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
-                  <strong>Debug Info:</strong> 
-                  <span className="ml-2">GitHub: {githubUsername || 'Not found'}</span>
-                  <span className="ml-2">ZK Status: {zkStatus}</span>
-                  <span className="ml-2">ZK Role: {zkRole}</span>
-                  <span className="ml-2">VC Status: {vcStatus}</span>
-                  <span className="ml-2">Profile Data: {profileData ? 'Available' : 'Not available'}</span>
-                  <span className="ml-2">VC Valid: {isVcValid ? 'Yes' : 'No'}</span>
-                </div>
-              )}
 
               {vcError ? (
                 <ErrorDisplay message={vcError} onRetry={handleDIDProfile} />

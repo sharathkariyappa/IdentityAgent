@@ -1,4 +1,3 @@
-
 import { createVerifiableCredentialJwt} from 'did-jwt-vc';
 import type { Issuer } from 'did-jwt-vc';
 import { EthrDID } from 'ethr-did';
@@ -10,8 +9,39 @@ import { ethers } from "ethers";
 // const INFURA_API_KEY = import.meta.env.VITE_NFURA_API_KEY;
 const PINATA_JWT = import.meta.env.VITE_PUBLIC_PINATA_JWT;
 
+// Types for profile data
+export interface ProfileData {
+  profile: {
+    did: string;
+    github: string;
+    role: string;
+    address: string;
+    network: string;
+    timestamp: number;
+  };
+  verifiableCredential: string;
+  metadata: {
+    created: string;
+    version: string;
+    type: string;
+    network: string;
+  };
+}
+
+export interface LoadedProfile {
+  profileData: ProfileData;
+  ipfsHash: string;
+  gatewayUrl: string;
+  verification: {
+    verified: boolean;
+    header?: any;
+    payload?: any;
+    error?: string;
+  };
+}
+
 // Simplified approach: Create EthrDID with minimal configuration
-export const createSimpleDID = async (network: 'sepolia' | 'mainnet' = 'sepolia') => {
+export const createSimpleDID = async (network: 'sepolia' | 'mainnet') => {
   if (!window.ethereum) throw new Error("No wallet found");
   
   const provider = new ethers.BrowserProvider(window.ethereum);
@@ -40,7 +70,7 @@ export const createSimpleDID = async (network: 'sepolia' | 'mainnet' = 'sepolia'
 export const createVCWithEthersSigner = async (
   github: string,
   role: string,
-  network: 'sepolia' | 'mainnet' = 'sepolia'
+  network: 'sepolia' | 'mainnet'
 ) => {
   if (!window.ethereum) throw new Error("No wallet found");
   
@@ -194,7 +224,7 @@ export const createVCSimpleEthrDID = async (
 export const testAllMethods = async (
   github: string,
   role: string,
-  network: 'sepolia' | 'mainnet' = 'sepolia'
+  network: 'sepolia' | 'mainnet' 
 ) => {
   // console.log('Testing all VC creation methods...');
   
@@ -283,12 +313,67 @@ export const uploadToIPFS = async (
   const result = await response.json();
   const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
   
-  // console.log(`Profile uploaded to IPFS: ${result.IpfsHash}`);
+  console.log(`Profile uploaded to IPFS: ${result.IpfsHash}`);
   
   return {
     ipfsHash: result.IpfsHash,
     gatewayUrl
   };
+};
+
+export const loadProfileFromIPFS = async (ipfsHash: string): Promise<LoadedProfile> => {
+  try {
+    // console.log(`🔄 Loading profile from IPFS: ${ipfsHash}`);
+    
+    // Try multiple IPFS gateways for better reliability
+    const gateways = [
+      `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
+      `https://ipfs.io/ipfs/${ipfsHash}`,
+      `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
+      `https://dweb.link/ipfs/${ipfsHash}`
+    ];
+    
+    let profileData: ProfileData | null = null;
+    let usedGateway = '';
+    
+    // Try each gateway until one works
+    for (const gateway of gateways) {
+      try {
+        // console.log(`Trying gateway: ${gateway}`);
+        const response = await fetch(gateway);
+        
+        if (response.ok) {
+          profileData = await response.json();
+          usedGateway = gateway;
+          // console.log(`Successfully loaded from: ${gateway}`);
+          break;
+        }
+      } catch (error) {
+        console.log(`Failed to load from: ${gateway}`);
+        continue;
+      }
+    }
+    
+    if (!profileData) {
+      throw new Error('Failed to load profile from all IPFS gateways');
+    }
+    
+    // Verify the JWT
+    const verification = await verifyJWTLocally(profileData.verifiableCredential);
+    
+    // console.log(` Profile loaded successfully for ${profileData.profile.github}`);
+    
+    return {
+      profileData,
+      ipfsHash,
+      gatewayUrl: usedGateway,
+      verification
+    };
+    
+  } catch (error) {
+    console.error(' Failed to load profile from IPFS:', error);
+    throw error;
+  }
 };
 
 // Simple verification (just parse the JWT)
@@ -366,35 +451,6 @@ export const createProfileWorkflowSimple = async (
     
   } catch (error) {
     console.error(' Simple workflow failed:', error);
-    throw error;
-  }
-};
-
-// Example usage
-export const exampleUsageSimple = async () => {
-  try {
-    if (!window.ethereum) {
-      throw new Error('Please install MetaMask');
-    }
-    
-    // Connect wallet
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    
-    // Create profile using simple workflow
-    const result = await createProfileWorkflowSimple('john-doe', 'developer', 'sepolia');
-    
-    // console.log('Profile created successfully:', {
-    //   github: 'john-doe',
-    //   role: 'developer',
-    //   did: result.did,
-    //   ipfsHash: result.ipfsHash,
-    //   verified: result.verification.verified
-    // });
-    
-    return result;
-    
-  } catch (error) {
-    console.error('Example failed:', error);
     throw error;
   }
 };

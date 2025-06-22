@@ -10,7 +10,7 @@ The system is built using a modern tech stack:
 - **AI/ML Model**: Python (deployed via Flask)
 - **Backend**: Node.js + Express, with ZK proof generation using Circom and SnarkJS
 - **Blockchain Integration**: On-chain activity is pulled using ether.js/Infura/Alchemy/
-- **Identity**: Ceramic DIDs for decentralized identifiers
+- **Identity**: ethrDID, 
 
 To get started with the frontend:
 

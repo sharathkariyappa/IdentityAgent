@@ -21,7 +21,8 @@ import {
   Key,
   Rocket,
   Info,
-  Code2
+  Code2,
+  IdCard
 } from 'lucide-react';
 
 const Documentation = () => {
@@ -97,7 +98,7 @@ const Documentation = () => {
     },
     {
       icon: Fingerprint,
-      name: 'ceramic',
+      name: 'ethereum-did(ethr-did)',
       description: 'DID creation',
       gradient: 'from-blue-400 to-cyan-400'
     },
@@ -112,6 +113,18 @@ const Documentation = () => {
       name: 'lucide-react',
       description: 'Icons',
       gradient: 'from-gray-400 to-gray-600'
+    },
+    {
+      icon: Package,
+      name: 'Graphql',
+      description: 'Data fetching',
+      gradient: 'from-yellow-400 to-orange-400'
+    },
+    {
+      icon: IdCard,
+      name: 'GitHub OAuth',
+      description: 'Authentication',
+      gradient: 'from-green-400 to-teal-400'
     }
   ];
 
@@ -140,8 +153,9 @@ npm install`,
       borderColor: 'border-orange-500',
       iconColor: 'text-orange-600',
       code: `VITE_ALCHEMY_API_KEY=your_alchemy_key
-VITE_INFURA_API_KEY=your_infura_key
-VITE_GITHUB_CLIENT_ID=your_github_client_id`,
+             VITE_INFURA_API_KEY=your_infura_key
+             VITE_GITHUB_CLIENT_ID=your_github_client_id
+             VITE_PUBLIC_PINATA_JWT=your_pinata_jwt`,
       description: 'Replace the placeholder values with your actual API keys from the respective services.',
       note: 'Create a .env file in your project root:'
     },
