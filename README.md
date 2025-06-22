@@ -1,5 +1,7 @@
 # React + TypeScript + Vite
 
+# Tract 1 : Identity Model Agent
+
 # Identity Agent
 
 This project is a decentralized identity agent model that classifies a user’s role as a **Founder**, **Investor**, or **Contributor** using both on-chain and off-chain data. The classification is powered by a machine learning model, and the identity claim is verified using a Zero-Knowledge Proof (ZKP) mechanism. The idea is to let users prove their identity privately and securely, without revealing underlying data.
