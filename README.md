@@ -12,9 +12,15 @@ The system is built using a modern tech stack:
 - **Blockchain Integration**: On-chain activity is pulled using ether.js/Infura/Alchemy/
 - **Identity**: ethrDID, 
 
+
+# Architecture of the Indentity model Agent
+
+![Architecture](https://github.com/user-attachments/assets/6cc06076-492f-49fa-8047-8e981f3156e8)
+
 To get started with the frontend:
 
 1. Clone the repository.
+
 2. Navigate to the frontend folder.
 3. Run `npm install` to install dependencies.
 4. Create a `.env` file in the `client` directory with the following variables:
