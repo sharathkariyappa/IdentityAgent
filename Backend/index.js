@@ -8,9 +8,19 @@ dotenv.config();
 import { ethers, isAddress, JsonRpcProvider } from 'ethers';
 import { ERC20_ABI } from './erc20ABI.js';
 
+// Import reward routes (convert to ES modules)
+import rewardRoute from './routes/reward.js';
+import mintBadgeRoute from './routes/mintbadge.js';
+
+const FRONTEND_URL = 'http://localhost:5173';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Add reward routes
+app.use('/api/reward', rewardRoute);
+app.use('/api/mint-badge', mintBadgeRoute);
 
 const provider = new JsonRpcProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`);
 
@@ -34,7 +44,7 @@ app.get('/api/github/callback', async (req, res) => {
     });
 
     res.redirect(
-      `http://localhost:5173/github/callback?token=${access_token}&data=${encodeURIComponent(JSON.stringify(userRes.data))}`
+      `${FRONTEND_URL}/github/callback?token=${access_token}&data=${encodeURIComponent(JSON.stringify(userRes.data))}`
     );
   } catch (err) {
     console.error('GitHub Auth Error:', err?.response?.data || err.message);
@@ -136,6 +146,49 @@ app.get('/api/onchain-stats', async (req, res) => {
   }
 });
 
+// Add this route to handle score calculation
+app.post('/api/calculate-role', async (req, res) => {
+    try {
+      const inputData = req.body;
+  
+      // Prepare data to send to Flask ML model
+      const payload = {
+        totalContributions: inputData.totalContributions,
+        pullRequests: inputData.pullRequests,
+        issues: inputData.issues,
+        repositoriesContributedTo: inputData.repositoriesContributedTo,
+        followers: inputData.followers,
+        repositories: inputData.repositories,
+        ethBalance: inputData.ethBalance,
+        txCount: inputData.txCount,
+        isContractDeployer: inputData.isContractDeployer,
+        contractDeployments: inputData.contractDeployments,
+        tokenBalances: inputData.tokenBalances,
+        nftCount: inputData.nftCount,
+        daoVotes: inputData.daoVotes,
+        hasNFTs: inputData.hasNFTs
+      };
+  
+      // Call your Flask ML service
+      const flaskResponse = await axios.post('https://mlflaskmodel.onrender.com/predict', payload);
+  
+      // Pass response back to frontend
+      res.json({
+        role: flaskResponse.data.role,
+        githubScore: flaskResponse.data.github_score,
+        onchainScore: flaskResponse.data.onchain_score
+      });
+  
+    } catch (error) {
+      console.error('Error calling ML model:', error.message);
+      res.status(500).json({ error: 'Failed to calculate role' });
+    }
+  });
+
+  app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+  });
+
 app.listen(4000, () => {
-  console.log('Backend running on http://localhost:4000');
-});
+    console.log(`Server running on port http://localhost:4000`);
+  });

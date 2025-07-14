@@ -224,7 +224,7 @@ export default function Dashboard() {
     localStorage.setItem('userProfile', JSON.stringify(profileData));
     
     setIsGeneratingProof(true);
-    setProofStatus("🔄 Fetching data...");
+    setProofStatus("Fetching data...");
   
     try {
       const [githubStats, onchainStats] = await Promise.all([
@@ -237,7 +237,7 @@ export default function Dashboard() {
         throw new Error("Failed to fetch GitHub stats");
       }
 
-      setProofStatus("🔄 Calculating scores...");
+      setProofStatus("Calculating scores...");
       // const result = RealisticZKScoreCalculator.calculateZkScore(githubStats, onchainStats);
       const finalProfile = buildFinalProfile(githubStats, onchainStats);
       // console.log("Final Profile:", finalProfile);
@@ -280,7 +280,7 @@ export default function Dashboard() {
       };
 
       // console.log("Circuit input:", input);
-      setProofStatus("🔄 Loading ZK files...");
+      setProofStatus("Loading ZK files...");
 
       // Load ZK files with better error handling
       const [wasmBuffer, zkeyBuffer, verificationKey] = await Promise.all([
@@ -299,12 +299,12 @@ export default function Dashboard() {
       ]);
       // console.log("WASM, Zkey, Verification Key loaded successfully");
 
-      setProofStatus("🔄 Calculating witness...");
+      setProofStatus("Calculating witness...");
       const witnessCalculatorBuilder = await loadWitnessCalculator();
       const wc = await witnessCalculatorBuilder(wasmBuffer);
       const witness = await wc.calculateWTNSBin(input, 0);
       // console.log("Witness calculated successfully");
-      setProofStatus("🔄 Generating ZK proof...");
+      setProofStatus("Generating ZK proof...");
       const { proof, publicSignals } = await snarkjs.groth16.prove(new Uint8Array(zkeyBuffer), witness);
       // console.log("ZK proof generated successfully");
       // Store proof data
@@ -312,7 +312,7 @@ export default function Dashboard() {
       localStorage.setItem("zkPublicSignals", JSON.stringify(publicSignals));
       // console.log("Proof and public signals stored in localStorage");
 
-      setProofStatus("🔄 Verifying proof...");
+      setProofStatus("Verifying proof...");
       const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
       // console.log("Proof verification result:", verified);
       
@@ -323,7 +323,7 @@ export default function Dashboard() {
       // console.log("✅ ZK Proof verified successfully!");
       // console.log("🪪 Proven Role:", publicSignals[0]);
       
-      setProofStatus("✅ Proof generated and verified!");
+      setProofStatus("Proof generated and verified!");
       
       // Navigate after a short delay to show success message
       setTimeout(() => {

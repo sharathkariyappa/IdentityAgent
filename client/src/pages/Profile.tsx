@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { ethers } from "ethers";
 import { groth16 } from 'snarkjs';
-import { User, Shield, AlertCircle, CheckCircle, Loader2, Github, Award, Copy, Check, Globe, Hash, Eye, Key, Download,Fingerprint} from 'lucide-react';
+import { User, Shield, AlertCircle, CheckCircle, Loader2, Wallet, BadgeCheck, Github, Award, Copy, Check, Globe, Hash, Eye, Key, Download,Fingerprint} from 'lucide-react';
 import { useAccount, useChainId } from 'wagmi';
 import { createProfileWorkflowSimple, loadProfileFromIPFS } from '../utils/ceramic';
+import AGT_ABI from '../abi/AgentToken';
 
 // Type definitions
 interface UserProfile {
@@ -229,6 +231,14 @@ const Profile: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [githubUsername, setGithubUsername] = useState<string>('');
   const [showRawData, setShowRawData] = useState<boolean>(false);
+  const [agtBalance, setAgtBalance] = useState<string>('0');
+  const [badgeMinted, setBadgeMinted] = useState(false);
+  const [isMintingBadge, setIsMintingBadge] = useState(false);
+  const [mintedTokenId, setMintedTokenId] = useState(null);
+
+  const PINATA_JWT = import.meta.env.VITE_PUBLIC_PINATA_JWT;
+  const AGT_TOKEN_ADDRESS = import.meta.env.VITE_AGT_TOKEN_ADDRESS;
+  const BACKEND_WALLET_ADDRESS = import.meta.env.VITE_BACKEND_WALLET_ADDRESS;
 
   // Load GitHub data from storage
   const loadGithubData = useCallback((): void => {
@@ -307,7 +317,7 @@ const Profile: React.FC = () => {
 
       // Try to create VC with GitHub username and verified role
       const result = await createProfileWorkflowSimple(githubUsername, zkRole, networkName);
-      console.log(result.ipfsHash)
+      // console.log(result.ipfsHash)
       localStorage.setItem('ipfsHash', result.ipfsHash);
       // console.log('DID profile result:', result);
 
@@ -342,6 +352,34 @@ const Profile: React.FC = () => {
           // console.log('Using fallback profile data:', fallbackProfileData);
           setProfileData(fallbackProfileData);
         }
+
+        // Give user 15 tokens for generating proof
+        try {
+          console.log('Minting 15 tokens for proof generation:', address);
+
+          const rewardResponse = await fetch('https://identitybackend.onrender.com/api/reward', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              address: address,
+              amount: 15
+            })
+          });
+
+          const rewardData = await rewardResponse.json();
+          
+          if (rewardData.success) {
+            console.log('15 tokens minted successfully:', rewardData.txHash);
+          } else {
+            console.error('Failed to mint tokens:', rewardData.error);
+          }
+          
+        } catch (rewardError) {
+          console.error('Error minting tokens:', rewardError);
+        }
+
       } else {
         throw new Error('VC verification failed - no verification result');
       }
@@ -352,6 +390,28 @@ const Profile: React.FC = () => {
       setVcStatus('error');
     }
   }, [githubUsername, zkRole, zkStatus, address]);
+
+  useEffect(() => {
+    const fetchAGTBalance = async () => {
+      if (!address || !window.ethereum) return;
+  
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(
+          '0xad661DbDEc357098639839E56aEC700D2317176e',
+          AGT_ABI,
+          provider
+        );
+        const raw = await contract.balanceOf(address);
+        const decimals = await contract.decimals();
+        setAgtBalance(ethers.formatUnits(raw, decimals));
+      } catch (err) {
+        console.error('Failed to fetch AGT balance:', err);
+      }
+    };
+  
+    fetchAGTBalance();
+  }, [address]);
 
   useEffect(() => {
     const ipfsHash = localStorage.getItem('ipfsHash');
@@ -428,6 +488,136 @@ const Profile: React.FC = () => {
 
     initializeProfile();
   }, [isConnected, loadGithubData, verifyZKProof]);
+
+  const uploadToIPFS = async (metadata: Record<string, any>) => {
+    // Option 1: Use Pinata API
+    const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+         'Authorization': `Bearer ${PINATA_JWT}`
+      },
+      body: JSON.stringify(metadata)
+    });
+    
+    const result = await response.json();
+    return result.IpfsHash;
+  };
+  
+  // Function to mint NFT badge
+  const mintBadge = async (role = "Verified User") => {
+    if (!address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    
+    setIsMintingBadge(true);
+    
+    try {
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      // const signer = provider.getSigner();
+      if (!AGT_TOKEN_ADDRESS) {
+        throw new Error('AGT_TOKEN_ADDRESS is not defined');
+      }
+      const resolvedSigner = await provider.getSigner();
+      const tokenContract = new ethers.Contract(AGT_TOKEN_ADDRESS, AGT_ABI, resolvedSigner);
+  
+      // Step 1: Approve the backend wallet to spend 8 AGT on user's behalf
+      const burnAmount = ethers.parseUnits("8", 18);
+      const allowance = await tokenContract.allowance(address, BACKEND_WALLET_ADDRESS);
+  
+      if (allowance < burnAmount) {
+        const approveTx = await tokenContract.approve(BACKEND_WALLET_ADDRESS, burnAmount);
+        await approveTx.wait();
+        console.log("Approved burn access to backend wallet");
+      } else {
+        console.log("Backend already approved to spend user's AGT");
+      }
+
+      // Step 1: Create metadata for the badge
+      const roleImages = {
+        Founder: "https://blue-acceptable-boar-797.mypinata.cloud/ipfs/bafkreibwx2drwtutv33tigowuswkjd2b5b4np35a3gjuaklhila3xnc3re",
+        Investor: "https://blue-acceptable-boar-797.mypinata.cloud/ipfs/bafkreieoj4scngdfern7yp2xiqgsl5cn6lsacijc5ezuklmisc54xa63vq",
+        Contributor: "https://blue-acceptable-boar-797.mypinata.cloud/ipfs/bafkreicea6elnfj6zdqtwd5oys45xmnx6vifoakmphq6kql7wixsaphwgu"
+      };
+      
+      const metadata = {
+        name: `${role} Badge`,
+        description: `Verification badge for ${role}`,
+        image: roleImages[role as keyof typeof roleImages] || "ipfs://QmDefaultImageHash",
+        attributes: [
+          { trait_type: "Role", value: role },
+          { trait_type: "Verification Date", value: new Date().toISOString() },
+          { trait_type: "Wallet Address", value: address }
+        ]
+      };
+      
+      // Step 2: Upload metadata to IPFS
+      const ipfsCid = await uploadToIPFS(metadata);
+      
+      // Step 3: Call your backend API to mint the badge
+      const response = await fetch('https://identitybackend.onrender.com/api/mint-badge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: address,
+          role: role,
+          ipfsCid: ipfsCid
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setBadgeMinted(true);
+        setMintedTokenId(result.tokenId);
+        
+        console.log(`Badge minted successfully! 
+        Token ID: ${result.tokenId}
+        Burn Tx: ${result.burnTxHash}
+        Mint Tx: ${result.mintTxHash}
+        View on OpenSea: ${result.openSeaUrl}`);
+      } else {
+        throw new Error(result.error);
+      }
+      
+    } catch (error) {
+      console.error('Failed to mint badge:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      alert(`Failed to mint badge: ${errorMessage}`);
+    } finally {
+      setIsMintingBadge(false);
+    }
+  };
+
+  const checkIfBadgeMinted = async () => {
+    if (!address) return;
+  
+    try {
+      const response = await fetch(`https://identitybackend.onrender.com/api/mint-badge/check-badge?address=${address}`);
+      const result = await response.json();
+  
+      if (result.success && result.tokenId) {
+        setBadgeMinted(true);
+        setMintedTokenId(result.tokenId);
+      } else {
+        setBadgeMinted(false);
+        setMintedTokenId(null);
+      }
+    } catch (error) {
+      console.error("Error checking badge:", error);
+      setBadgeMinted(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (address) {
+      checkIfBadgeMinted();
+    }
+  }, [address]);
 
   // Create DID profile when ZK verification succeeds
   // useEffect(() => {
@@ -574,6 +764,64 @@ const Profile: React.FC = () => {
                     <span className="text-xs font-medium text-blue-700">{networkName}</span>
                   </div>
                 </div>
+              </DataCard>
+
+              {/* AGT Token Balance */}
+              <DataCard 
+                title="AGT Token Balance" 
+                icon={<Wallet className="w-5 h-5 text-green-700" />}
+                gradient="from-green-100 to-emerald-100"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Balance</span>
+                    <span className="text-sm font-semibold text-emerald-700">
+                      {agtBalance} AGT
+                    </span>
+                  </div>
+                </div>
+              </DataCard>
+
+              {/* Mint Role Badge */}
+              <DataCard 
+                title="Mint Role Badge" 
+                icon={<BadgeCheck className="w-5 h-5 text-yellow-600" />}
+                gradient="from-yellow-100 to-orange-100"
+              >
+                {badgeMinted ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-green-700 font-medium">Badge successfully minted!</p>
+                    {mintedTokenId && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-600">Token ID: {mintedTokenId}</p>
+                        <a 
+                          href={`https://testnets.opensea.io/assets/sepolia/${import.meta.env.VITE_BADGE_NFT_ADDRESS}/${mintedTokenId}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-700 underline block"
+                        >
+                          View on OpenSea
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Eligible Role</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${roleColors[zkRole]}`}>
+                        {zkRole || 'Not Verified'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => mintBadge(zkRole)}
+                      disabled={isMintingBadge || !zkRole}
+                      className="w-full px-4 py-2 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-lg disabled:opacity-50"
+                    >
+                      {isMintingBadge ? 'Minting Badge...' : 'Mint Badge'}
+                    </button>
+                  </div>
+                )}
               </DataCard>
             </div>
 

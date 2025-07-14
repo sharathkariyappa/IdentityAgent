@@ -239,7 +239,7 @@ export const testAllMethods = async (
   try {
     // console.log('Testing Method 1: Custom Signer...');
     results.method1 = await createVCWithEthersSigner(github, role, network);
-    // console.log(' Method 1 succeeded');
+    console.log(' Method 1 succeeded');
   } catch (error) {
     const msg = `Method 1 failed: ${error}`;
     console.error(msg);
@@ -313,7 +313,7 @@ export const uploadToIPFS = async (
   const result = await response.json();
   const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
   
-  console.log(`Profile uploaded to IPFS: ${result.IpfsHash}`);
+  // console.log(`Profile uploaded to IPFS: ${result.IpfsHash}`);
   
   return {
     ipfsHash: result.IpfsHash,
