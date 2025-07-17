@@ -357,7 +357,7 @@ const Profile: React.FC = () => {
         try {
           console.log('Minting 15 tokens for proof generation:', address);
 
-          const rewardResponse = await fetch('https://identitybackend.onrender.com/api/reward', {
+          const rewardResponse = await fetch('https://identitybackend-production.up.railway.app/api/reward', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -557,7 +557,7 @@ const Profile: React.FC = () => {
       const ipfsCid = await uploadToIPFS(metadata);
       
       // Step 3: Call your backend API to mint the badge
-      const response = await fetch('https://identitybackend.onrender.com/api/mint-badge', {
+      const response = await fetch('https://identitybackend-production.up.railway.app/api/mint-badge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -597,7 +597,7 @@ const Profile: React.FC = () => {
     if (!address) return;
   
     try {
-      const response = await fetch(`https://identitybackend.onrender.com/api/mint-badge/check-badge?address=${address}`);
+      const response = await fetch(`https://identitybackend-production.up.railway.app/api/mint-badge/check-badge?address=${address}`);
       const result = await response.json();
   
       if (result.success && result.tokenId) {

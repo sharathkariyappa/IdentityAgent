@@ -183,7 +183,7 @@ export default function Dashboard() {
 
   const handleLinkGithub = () => {
     const client_id = import.meta.env.VITE_GITHUB_CLIENT_ID;
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=https://identitybackend.onrender.com/api/github/callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=https://identitybackend-production.up.railway.app/api/github/callback`;
   };
 
   function buildFinalProfile (
@@ -241,7 +241,7 @@ export default function Dashboard() {
       // const result = RealisticZKScoreCalculator.calculateZkScore(githubStats, onchainStats);
       const finalProfile = buildFinalProfile(githubStats, onchainStats);
       // console.log("Final Profile:", finalProfile);
-      const flaskResponse = await axios.post("https://identitybackend.onrender.com/api/calculate-role", finalProfile); 
+      const flaskResponse = await axios.post("https://identitybackend-production.up.railway.app/api/calculate-role", finalProfile); 
       // console.log("Flask Response:", flaskResponse.data);
 
       const githubScore = flaskResponse.data.githubScore;
